@@ -1002,83 +1002,21 @@ function submitSurvey() {
     const bar=document.getElementById('status-bar');
     bar.style.display='block';bar.className='status-bar';bar.textContent='正在提交...';
     // 双通道提交：优先 Google Sheets，失败则显示复制码
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-
-    // 通道1：静默表单提交到 Google（iframe 内，不跳转）
-    const iframe = document.createElement('iframe');
-    iframe.name = 'submit-iframe';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
+    // Simple form POST to Render
     const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = BACKEND;
-    form.target = 'submit-iframe';
-    form.acceptCharset = 'utf-8';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'data';
-    input.value = JSON.stringify(data);
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-
-    // 3秒后检测是否成功（如果 Google 不通，iframe 会加载失败）
-    let submitted = false;
-    setTimeout(function(){
-        if(!submitted){
-            submitted = true;
-            document.getElementById('survey-form').style.display = 'none';
-            // 通道2：显示复制码
-            document.getElementById('fallback-area').style.display = 'block';
-            document.getElementById('fallback-code').textContent = encoded;
-        }
-    }, 4000);
-
-    // 如果 iframe 加载成功（Google 通了）
-    iframe.onload = function(){
-        submitted = true;
-        bar.className='status-bar success';bar.textContent='提交成功！感谢您的参与。';
-        document.getElementById('survey-form').style.display = 'none';
-        document.getElementById('thank-you').style.display = 'block';
-        window.scrollTo(0,0);
-        setTimeout(function(){bar.style.display='none';document.body.removeChild(iframe);},4000);
-    };
-
-    // 先显示提交中
-    bar.style.display='block';bar.className='status-bar';bar.textContent='正在提交...';
-}
-
-// 键盘快捷键
-document.addEventListener('keydown',function(e){
-    const k=e.key.toUpperCase();
-    if(k!=='A'&&k!=='B'&&k!=='C')return;
-    for(let i=1;i<=TOTAL;i++){
-        const dims=['compat','personal','overall'];
-        for(let d of dims){
-            if(!ans['q'+i+'_'+d]){
-                const g=document.getElementById('q'+i+'_'+d);
-                const opts=g.querySelectorAll('.option');
-                const idx=k==='A'?0:k==='B'?1:2;
-                selectOpt('q'+i+'_'+d,k,opts[idx]);
-                document.getElementById('q'+i).scrollIntoView({behavior:'smooth',block:'center'});
-                return;
-            }
-        }
-    }
-});
-function copyFallback() {
-    const code = document.getElementById('fallback-code').textContent;
-    navigator.clipboard.writeText(code).then(function() {
-        alert('已复制！请通过微信或邮件发送给研究者。');
-    }).catch(function() {
-        const ta = document.createElement('textarea');
-        ta.value = code; document.body.appendChild(ta);
-        ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-        alert('已复制！请通过微信或邮件发送给研究者。');
-    });
-}
+    form.method = 'POST'; form.action = BACKEND; form.target = '_blank';
+    const inp = document.createElement('input');
+    inp.type = 'hidden'; inp.name = 'data';
+    inp.value = JSON.stringify(data);
+    form.appendChild(inp); document.body.appendChild(form);
+    form.submit(); document.body.removeChild(form);
+    
+    bar.style.display='block';bar.className='status-bar success';
+    bar.textContent='Submitted - new window may open';
+    document.getElementById('survey-form').style.display='none';
+    document.getElementById('thank-you').style.display='block';
+    window.scrollTo(0,0);
+    setTimeout(function(){bar.style.display='none';},5000);
 
 updateUI();
 </script>
